@@ -1,13 +1,9 @@
 // Формування відомості успішності групи
-// Написано кілька років тому, працює, тестів немає.
 function average(values) {
   if (values.length === 0) {
     return 0;
   }
-  let sum = 0;
-  for (let i = 0; i < values.length; i++) {
-    sum += values[i];
-  }
+  const sum = values.reduce((acc, value) => acc + value, 0);
   return sum / values.length;
 }
 
@@ -26,48 +22,45 @@ function formatDisplayName(name, isShort) {
   if (!isShort) {
     return name;
   }
-  const parts = name.split(" ");
-  return parts[0] + " " + parts[1][0] + ".";
+  const [lastName, firstName] = name.split(" ");
+  return `${lastName} ${firstName[0]}.`;
 }
 
 function formatScore(score) {
-  return score.toFixed(1) + " (" + gradeName(score) + ")";
+  return `${score.toFixed(1)} (${gradeName(score)})`;
 }
 
 function formatStudentLine(student, score, isShort) {
-  const baseLine = formatDisplayName(student.name, isShort) + " — " + formatScore(score);
-  if (score < 2.5) {
-    return baseLine + " [!]";
-  }
-  return baseLine;
+  const baseLine = `${formatDisplayName(student.name, isShort)} — ${formatScore(score)}`;
+  const marker = score < 2.5 ? " [!]" : "";
+  return `${baseLine}${marker}`;
 }
 
 function buildReport(data, opts) {
-  let report = "";
-  const attentionStudents = [];
   const isShort = Boolean(opts && opts.short);
-  report += "Відомість успішності\n";
-  report += "Група: " + data.group + "\n";
-  report += "------------------------------\n";
-  const studentAverages = [];
-  for (let i = 0; i < data.students.length; i++) {
-    const student = data.students[i];
-    const studentAverage = average(student.grades);
-    if (studentAverage < 2.5) {
-      attentionStudents.push(student.name);
-    }
-    report += formatStudentLine(student, studentAverage, isShort) + "\n";
-    studentAverages.push(studentAverage);
-  }
-  report += "------------------------------\n";
-  const groupAverage = average(studentAverages);
-  report += "Середній бал групи: " + formatScore(groupAverage) + "\n";
-  if (attentionStudents.length > 0) {
-    report += "Потребують уваги: " + attentionStudents.join(", ") + "\n";
-  } else {
-    report += "Потребують уваги: немає\n";
-  }
-  return report;
+  const entries = data.students.map((student) => ({
+    student,
+    score: average(student.grades),
+  }));
+  const studentLines = entries.map((entry) =>
+    formatStudentLine(entry.student, entry.score, isShort)
+  );
+  const groupAverage = average(entries.map((entry) => entry.score));
+  const attentionStudents = entries
+    .filter((entry) => entry.score < 2.5)
+    .map((entry) => entry.student.name);
+  const attentionText = attentionStudents.length > 0 ? attentionStudents.join(", ") : "немає";
+
+  const lines = [
+    "Відомість успішності",
+    `Група: ${data.group}`,
+    "------------------------------",
+    ...studentLines,
+    "------------------------------",
+    `Середній бал групи: ${formatScore(groupAverage)}`,
+    `Потребують уваги: ${attentionText}`,
+  ];
+  return `${lines.join("\n")}\n`;
 }
 
 module.exports = { buildReport };

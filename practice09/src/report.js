@@ -1,23 +1,26 @@
 // Формування відомості успішності групи
 // Написано кілька років тому, працює, тестів немає.
+function average(values) {
+  if (values.length === 0) {
+    return 0;
+  }
+  let sum = 0;
+  for (let i = 0; i < values.length; i++) {
+    sum += values[i];
+  }
+  return sum / values.length;
+}
+
 function buildReport(data, opts) {
   let report = "";
   const attentionStudents = [];
   report += "Відомість успішності\n";
   report += "Група: " + data.group + "\n";
   report += "------------------------------\n";
-  let groupSum = 0;
-  let studentCount = 0;
+  const studentAverages = [];
   for (let i = 0; i < data.students.length; i++) {
     const student = data.students[i];
-    let gradesSum = 0;
-    for (let j = 0; j < student.grades.length; j++) {
-      gradesSum = gradesSum + student.grades[j];
-    }
-    let studentAverage = 0;
-    if (student.grades.length > 0) {
-      studentAverage = gradesSum / student.grades.length;
-    }
+    const studentAverage = average(student.grades);
     let studentLevel = "";
     if (studentAverage >= 4.5) {
       studentLevel = "відмінно";
@@ -51,14 +54,10 @@ function buildReport(data, opts) {
       attentionStudents.push(student.name);
     }
     report += line + "\n";
-    groupSum = groupSum + studentAverage;
-    studentCount = studentCount + 1;
+    studentAverages.push(studentAverage);
   }
   report += "------------------------------\n";
-  let groupAverage = 0;
-  if (studentCount > 0) {
-    groupAverage = groupSum / studentCount;
-  }
+  const groupAverage = average(studentAverages);
   let groupLevel = "";
   if (groupAverage >= 4.5) {
     groupLevel = "відмінно";

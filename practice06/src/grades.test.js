@@ -16,8 +16,9 @@ describe("average (за SPEC.md)", () => {
   });
 
   test("якщо аргумент не є масивом — кидає TypeError", () => {
-    for (const invalid of [null, undefined, 100, "90", {}]) {
+    for (const invalid of [null, undefined, 100, "90", {}, { length: 0 }, { reduce: () => 1 }]) {
       expect(() => average(invalid)).toThrow(TypeError);
+      expect(() => average(invalid)).toThrow("Очікується масив балів");
     }
   });
 });
@@ -44,6 +45,7 @@ describe("toFivePoint (за SPEC.md)", () => {
   test("якщо бал виходить за межі 0–100 або не є числом — кидає RangeError", () => {
     for (const invalid of [-1, 101, NaN, "90", null, undefined]) {
       expect(() => toFivePoint(invalid)).toThrow(RangeError);
+      expect(() => toFivePoint(invalid)).toThrow(/\S+/);
     }
   });
 });
@@ -73,6 +75,7 @@ describe("applyLatePenalty (за SPEC.md)", () => {
   test("якщо daysLate не є цілим невід’ємним числом — кидає RangeError", () => {
     for (const invalidDays of [-1, 1.5, NaN, "2", null]) {
       expect(() => applyLatePenalty(80, invalidDays)).toThrow(RangeError);
+      expect(() => applyLatePenalty(80, invalidDays)).toThrow(/\S+/);
     }
   });
 });
@@ -93,12 +96,14 @@ describe("finalGrade (за SPEC.md)", () => {
   test("для порожнього масиву або не-масиву кидає Error", () => {
     for (const invalid of [[], null, undefined, "5"]) {
       expect(() => finalGrade(invalid)).toThrow(Error);
+      expect(() => finalGrade(invalid)).toThrow(/\S+/);
     }
   });
 
   test("якщо хоча б одна оцінка не є цілим числом від 2 до 5 — кидає RangeError", () => {
     for (const badList of [[1], [6], [3.5], ["4"], [5, 0]]) {
       expect(() => finalGrade(badList)).toThrow(RangeError);
+      expect(() => finalGrade(badList)).toThrow(/\S+/);
     }
   });
 });

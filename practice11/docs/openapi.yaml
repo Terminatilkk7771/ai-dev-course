@@ -1,0 +1,267 @@
+openapi: 3.1.0
+info:
+  title: Room Booking API
+  version: 1.2.0
+  license:
+    name: MIT
+  description: >
+    REST API сервісу бронювання аудиторій коледжу: перегляд аудиторій,
+    перевірка зайнятості, пошук вільних слотів, створення та скасування бронювань.
+servers:
+  - url: http://localhost:3000
+    description: Локальний сервер розробки
+# Поточна версія сервісу працює без автентифікації та авторизації
+security: []
+paths:
+  /api/rooms:
+    get:
+      summary: Отримати перелік усіх аудиторій
+      operationId: listRooms
+      responses:
+        "200":
+          description: Успішне отримання довідника аудиторій
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Room"
+  /api/rooms/{id}/bookings:
+    get:
+      summary: Отримати бронювання аудиторії на вказану дату
+      operationId: listRoomBookings
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Ідентифікатор аудиторії
+          schema:
+            type: string
+            example: "204"
+        - name: date
+          in: query
+          required: false
+          description: Дата бронювань у форматі РРРР-ММ-ДД
+          schema:
+            type: string
+            format: date
+            example: "2026-11-02"
+      responses:
+        "200":
+          description: Список бронювань аудиторії на задану дату
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Booking"
+        "404":
+          description: Аудиторію не знайдено
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/rooms/{id}/free:
+    get:
+      summary: Знайти вільні проміжки аудиторії на вказану дату
+      operationId: getFreeSlots
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Ідентифікатор аудиторії
+          schema:
+            type: string
+            example: "204"
+        - name: date
+          in: query
+          required: false
+          description: Дата пошуку у форматі РРРР-ММ-ДД
+          schema:
+            type: string
+            format: date
+            example: "2026-11-02"
+        - name: min
+          in: query
+          required: false
+          description: Мінімальна тривалість проміжку в хвилинах (за замовчуванням 45)
+          schema:
+            type: integer
+            minimum: 1
+            default: 45
+            example: 60
+      responses:
+        "200":
+          description: Упорядкований список вільних часових слотів
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Slot"
+        "404":
+          description: Аудиторію не знайдено
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/bookings:
+    post:
+      summary: Створити нове бронювання аудиторії
+      operationId: createBooking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingInput"
+            example:
+              roomId: "204"
+              date: "2026-11-02"
+              from: "10:00"
+              to: "11:30"
+              who: "Тимченко С. В."
+      responses:
+        "201":
+          description: Бронювання успішно створено
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "400":
+          description: Некоректний інтервал часу, поза робочими годинами аудиторії або перевищено MAX_BOOKING_HOURS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Аудиторію не знайдено
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Конфлікт перетину часу з наявним бронюванням
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Внутрішня помилка сервера (наприклад, невідповідний формат часу ГГ:ХХ у RangeError)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/bookings/{id}:
+    delete:
+      summary: Скасувати наявне бронювання
+      operationId: cancelBooking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Числовий ідентифікатор бронювання
+          schema:
+            type: integer
+            minimum: 1
+            example: 1
+      responses:
+        "204":
+          description: Бронювання успішно скасовано
+        "404":
+          description: Бронювання не знайдено
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Скасування заборонене, оскільки до початку менше 2 годин
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    Room:
+      type: object
+      required: [id, name, seats, opens, closes]
+      properties:
+        id:
+          type: string
+          example: "204"
+        name:
+          type: string
+          example: "Комп'ютерний клас 204"
+        seats:
+          type: integer
+          example: 15
+        opens:
+          type: string
+          description: Час відкриття у форматі ГГ:ХХ
+          example: "08:30"
+        closes:
+          type: string
+          description: Час закриття у форматі ГГ:ХХ
+          example: "20:00"
+    BookingInput:
+      type: object
+      required: [roomId, date, from, to, who]
+      properties:
+        roomId:
+          type: string
+          example: "204"
+        date:
+          type: string
+          format: date
+          example: "2026-11-02"
+        from:
+          type: string
+          description: Початок у форматі ГГ:ХХ
+          example: "10:00"
+        to:
+          type: string
+          description: Завершення у форматі ГГ:ХХ
+          example: "11:30"
+        who:
+          type: string
+          example: "Тимченко С. В."
+    Booking:
+      type: object
+      required: [id, roomId, date, from, to, who]
+      properties:
+        id:
+          type: integer
+          example: 1
+        roomId:
+          type: string
+          example: "204"
+        date:
+          type: string
+          format: date
+          example: "2026-11-02"
+        from:
+          type: string
+          example: "10:00"
+        to:
+          type: string
+          example: "11:30"
+        who:
+          type: string
+          example: "Тимченко С. В."
+    Slot:
+      type: object
+      required: [from, to]
+      properties:
+        from:
+          type: string
+          example: "08:30"
+        to:
+          type: string
+          example: "10:00"
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          example: "Перетин із бронюванням #1"

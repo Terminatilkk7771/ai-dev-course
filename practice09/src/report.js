@@ -31,7 +31,11 @@ function formatScore(score) {
 }
 
 function formatStudentLine(student, score, isShort) {
-  const baseLine = `${formatDisplayName(student.name, isShort)} — ${formatScore(score)}`;
+  const displayName = formatDisplayName(student.name, isShort);
+  if (score === null) {
+    return `${displayName} — n/a`;
+  }
+  const baseLine = `${displayName} — ${formatScore(score)}`;
   const marker = score < 2.5 ? " [!]" : "";
   return `${baseLine}${marker}`;
 }
@@ -40,13 +44,14 @@ function buildReport(data, opts) {
   const isShort = Boolean(opts && opts.short);
   const entries = data.students.map((student) => ({
     student,
-    score: average(student.grades),
+    score: student.grades.length > 0 ? average(student.grades) : null,
   }));
   const studentLines = entries.map((entry) =>
     formatStudentLine(entry.student, entry.score, isShort)
   );
-  const groupAverage = average(entries.map((entry) => entry.score));
-  const attentionStudents = entries
+  const gradedEntries = entries.filter((entry) => entry.score !== null);
+  const groupAverage = average(gradedEntries.map((entry) => entry.score));
+  const attentionStudents = gradedEntries
     .filter((entry) => entry.score < 2.5)
     .map((entry) => entry.student.name);
   const attentionText = attentionStudents.length > 0 ? attentionStudents.join(", ") : "немає";

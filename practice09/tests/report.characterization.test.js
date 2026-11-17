@@ -19,7 +19,7 @@ describe("Характеризаційні тести для buildReport (пот
     expect(report).toContain("Потребують уваги: немає\n");
   });
 
-  test("дивність: студент без оцінок отримує 0.0 [!], потрапляє до уваги та знижує середній бал групи", () => {
+  test("нова вимога: студент без оцінок відображається як n/a без [!] і не враховується в середньому балі групи", () => {
     const data = {
       group: "201-А",
       students: [
@@ -28,12 +28,25 @@ describe("Характеризаційні тести для buildReport (пот
       ],
     };
 
-    const report = buildReport(data);
+    const fullReport = buildReport(data);
+    expect(fullReport).toContain("Іваненко Олег — 5.0 (відмінно)\n");
+    expect(fullReport).toContain("Петренко Анна — n/a\n");
+    expect(fullReport).not.toContain("Петренко Анна — 0.0");
+    expect(fullReport).not.toContain("[!]");
+    expect(fullReport).toContain("Середній бал групи: 5.0 (відмінно)\n");
+    expect(fullReport).toContain("Потребують уваги: немає\n");
 
-    expect(report).toContain("Іваненко Олег — 5.0 (відмінно)\n");
-    expect(report).toContain("Петренко Анна — 0.0 (незадовільно) [!]\n");
-    expect(report).toContain("Середній бал групи: 2.5 (задовільно)\n");
-    expect(report).toContain("Потребують уваги: Петренко Анна\n");
+    const shortReport = buildReport(data, { short: true });
+    expect(shortReport).toContain("Петренко А. — n/a\n");
+    expect(shortReport).toContain("Середній бал групи: 5.0 (відмінно)\n");
+
+    const allWithoutGrades = buildReport({
+      group: "202-А",
+      students: [{ name: "Сидоренко Павло", grades: [] }],
+    });
+    expect(allWithoutGrades).toContain("Сидоренко Павло — n/a\n");
+    expect(allWithoutGrades).toContain("Середній бал групи: 0.0 (незадовільно)\n");
+    expect(allWithoutGrades).toContain("Потребують уваги: немає\n");
   });
 
   test("межові значення шкали оцінювання: 4.5, 3.5, 2.5 та нижче 2.5", () => {

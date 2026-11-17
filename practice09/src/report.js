@@ -27,9 +27,22 @@ function gradeName(score) {
   }
 }
 
+function formatDisplayName(name, isShort) {
+  if (!isShort) {
+    return name;
+  }
+  const parts = name.split(" ");
+  return parts[0] + " " + parts[1][0] + ".";
+}
+
+function formatScore(score) {
+  return score.toFixed(1) + " (" + gradeName(score) + ")";
+}
+
 function buildReport(data, opts) {
   let report = "";
   const attentionStudents = [];
+  const isShort = Boolean(opts && opts.short);
   report += "Відомість успішності\n";
   report += "Група: " + data.group + "\n";
   report += "------------------------------\n";
@@ -37,21 +50,7 @@ function buildReport(data, opts) {
   for (let i = 0; i < data.students.length; i++) {
     const student = data.students[i];
     const studentAverage = average(student.grades);
-    const studentLevel = gradeName(studentAverage);
-    let line = "";
-    if (opts && opts.short) {
-      line =
-        student.name.split(" ")[0] +
-        " " +
-        student.name.split(" ")[1][0] +
-        ". — " +
-        studentAverage.toFixed(1) +
-        " (" +
-        studentLevel +
-        ")";
-    } else {
-      line = student.name + " — " + studentAverage.toFixed(1) + " (" + studentLevel + ")";
-    }
+    let line = formatDisplayName(student.name, isShort) + " — " + formatScore(studentAverage);
     if (studentAverage < 2.5) {
       line = line + " [!]";
       attentionStudents.push(student.name);
@@ -61,8 +60,7 @@ function buildReport(data, opts) {
   }
   report += "------------------------------\n";
   const groupAverage = average(studentAverages);
-  const groupLevel = gradeName(groupAverage);
-  report += "Середній бал групи: " + groupAverage.toFixed(1) + " (" + groupLevel + ")\n";
+  report += "Середній бал групи: " + formatScore(groupAverage) + "\n";
   if (attentionStudents.length > 0) {
     report += "Потребують уваги: " + attentionStudents.join(", ") + "\n";
   } else {

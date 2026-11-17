@@ -1,6 +1,16 @@
 const express = require("express");
 const students = require("./students");
-const { requireAuth, login } = require("./auth");
+const { requireAuth, requireRole, login } = require("./auth");
+
+/** Екранує небезпечні HTML-символи для запобігання XSS */
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 /** Перевіряє, що :id — додатне ціле число */
 function validateId(req, res, next) {
@@ -17,18 +27,26 @@ function createApp(db) {
   app.use(express.json());
 
   app.post("/api/login", (req, res) => {
-    const token = login(db, req.body.login, req.body.password);
+    const { login: loginName, password } = req.body || {};
+    const token = login(db, loginName, password);
     if (!token) return res.status(401).json({ error: "Невірний логін або пароль" });
     res.json({ token });
   });
 
   app.get("/api/students", (req, res) => {
-    const page = Number(req.query.page) || 1;
+    let page = 1;
+    if (req.query.page !== undefined) {
+      page = Number(req.query.page);
+      if (!Number.isInteger(page) || page < 1) {
+        return res.status(400).json({ error: "Некоректний номер сторінки" });
+      }
+    }
     res.json(students.listStudents(db, page));
   });
 
   app.get("/api/students/search", (req, res) => {
-    res.json(students.findByName(db, req.query.name || ""));
+    const name = typeof req.query.name === "string" ? req.query.name : "";
+    res.json(students.findByName(db, name));
   });
 
   app.get("/api/students/:id/average", validateId, (req, res) => {
@@ -40,19 +58,27 @@ function createApp(db) {
     const s = students.getById(db, req.studentId);
     if (!s) return res.status(404).send("Студента не знайдено");
     const avg = students.averageGrade(db, req.studentId);
-    res.type("html").send(`<h1>${s.name}</h1><p>Група: ${s.group_name}</p><p>Середній бал: ${avg}</p>`);
+    const avgText = avg === null ? "оцінок немає" : String(avg);
+    res
+      .type("html")
+      .send(
+        `<h1>${escapeHtml(s.name)}</h1><p>Група: ${escapeHtml(s.group_name)}</p><p>Середній бал: ${escapeHtml(avgText)}</p>`
+      );
   });
 
-  app.delete("/api/students/:id", requireAuth, validateId, (req, res) => {
+  app.delete("/api/students/:id", requireAuth, requireRole("teacher"), validateId, (req, res) => {
     if (!students.deleteStudent(db, req.studentId)) return res.status(404).json({ error: "Студента не знайдено" });
     res.status(204).end();
   });
 
   app.use((err, req, res, next) => {
-    res.status(500).json({ error: err.message, stack: err.stack });
+    if (err && (err.type === "entity.parse.failed" || err.status === 400)) {
+      return res.status(400).json({ error: "Некоректні вхідні дані" });
+    }
+    res.status(500).json({ error: "Внутрішня помилка сервера" });
   });
 
   return app;
 }
 
-module.exports = { createApp };
+module.exports = { createApp, escapeHtml };

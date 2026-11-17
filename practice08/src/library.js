@@ -4,6 +4,7 @@
  */
 
 const LOAN_DAYS = 14;
+const RENEW_DAYS = 7;
 const FINE_PER_DAY = 5;
 const MAX_FINE = 100;
 const MAX_ACTIVE = 3;
@@ -67,7 +68,25 @@ function returnBook(loan, returnedAt) {
   return calculateFine(loan.due, returnedAt);
 }
 
+function renewLoan(loan, today) {
+  if (loan.returnedAt !== null) {
+    throw new Error("Книгу вже повернено");
+  }
+  if (loan.renewed) {
+    throw new Error("Книгу вже продовжували");
+  }
+  if (toUtcDayStart(today) > toUtcDayStart(loan.due)) {
+    throw new Error("Термін повернення вже минув");
+  }
+  return {
+    ...loan,
+    issuedAt: new Date(loan.issuedAt.getTime()),
+    due: dueDate(loan.due, RENEW_DAYS),
+    renewed: true,
+  };
+}
+
 module.exports = {
-  LOAN_DAYS, FINE_PER_DAY, MAX_FINE, MAX_ACTIVE,
-  isValidCard, dueDate, calculateFine, canBorrow, issueBook, returnBook,
+  LOAN_DAYS, RENEW_DAYS, FINE_PER_DAY, MAX_FINE, MAX_ACTIVE,
+  isValidCard, dueDate, calculateFine, canBorrow, issueBook, returnBook, renewLoan,
 };

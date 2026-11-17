@@ -1,8 +1,11 @@
 const express = require("express");
 const { createStore } = require("./store");
+const { adminRoutes, notifyLowRating } = require("./admin");
 
 /** Перевіряє відгук за вимогами REQUIREMENTS.md; повертає текст помилки або null */
-function validate({ lessonId, rating, comment }) {
+function validate(body) {
+  if (!body || typeof body !== "object") return "Некоректне тіло запиту";
+  const { lessonId, rating, comment } = body;
   if (typeof lessonId !== "string" || lessonId.trim() === "") return "Не вказано заняття";
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) return "Оцінка має бути цілим числом від 1 до 5";
   if (comment !== undefined && (typeof comment !== "string" || comment.length > 500)) {
@@ -20,10 +23,12 @@ function createApp({ store = createStore() } = {}) {
       const error = validate(req.body);
       if (error) return res.status(400).json({ error });
       const { lessonId, rating, comment = "" } = req.body;
-      await store.add({ lessonId, rating, comment, createdAt: new Date().toISOString() });
-      res.status(201).json({ ok: true });
+      const feedback = { lessonId, rating, comment, createdAt: new Date().toISOString() };
+      await store.add(feedback);
+      if (rating <= 2) await notifyLowRating(feedback);
+      return res.status(201).json({ ok: true });
     } catch (err) {
-      next(err);
+      return next(err);
     }
   });
 
@@ -33,9 +38,14 @@ function createApp({ store = createStore() } = {}) {
     res.json({ lessonId: req.params.id, count: ratings.length, average });
   });
 
+  adminRoutes(app, store);
+
   app.use((err, req, res, next) => {
     console.error(err);
-    res.status(500).json({ error: "Внутрішня помилка сервера" });
+    if (err && (err.type === "entity.parse.failed" || err.status === 400)) {
+      return res.status(400).json({ error: "Некоректний формат JSON" });
+    }
+    return res.status(500).json({ error: "Внутрішня помилка сервера" });
   });
 
   return app;

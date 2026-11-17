@@ -1,6 +1,6 @@
 {
   "name": "feedback-service",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Анонімні відгуки здобувачів про заняття",
   "main": "src/server.js",
   "scripts": {

@@ -14,8 +14,9 @@ function isValidCard(card) {
 }
 
 function dueDate(issueDate, days = LOAN_DAYS) {
-  issueDate.setDate(issueDate.getDate() + days);
-  return issueDate;
+  const result = new Date(issueDate.getTime());
+  result.setDate(result.getDate() + days);
+  return result;
 }
 
 function calculateFine(due, returnedAt) {
@@ -48,7 +49,7 @@ function issueBook(loans, reader, bookId, issueDate) {
   const loan = {
     readerId: reader.id,
     bookId,
-    issuedAt: issueDate,
+    issuedAt: new Date(issueDate.getTime()),
     due: dueDate(issueDate),
     returnedAt: null,
   };

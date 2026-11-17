@@ -7,6 +7,7 @@ const LOAN_DAYS = 14;
 const FINE_PER_DAY = 5;
 const MAX_FINE = 100;
 const MAX_ACTIVE = 3;
+const MS_PER_DAY = 86_400_000;
 const CARD_RE = /^(KP|ZV)-(\d{4})\/(\d{2})$/;
 
 function isValidCard(card) {
@@ -19,8 +20,12 @@ function dueDate(issueDate, days = LOAN_DAYS) {
   return result;
 }
 
+function toUtcDayStart(date) {
+  return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
 function calculateFine(due, returnedAt) {
-  const late = returnedAt.getDate() - due.getDate();
+  const late = (toUtcDayStart(returnedAt) - toUtcDayStart(due)) / MS_PER_DAY;
   if (late <= 0) return 0;
   return Math.min(late * FINE_PER_DAY, MAX_FINE);
 }

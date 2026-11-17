@@ -11,6 +11,22 @@ function average(values) {
   return sum / values.length;
 }
 
+function gradeName(score) {
+  if (score >= 4.5) {
+    return "відмінно";
+  } else {
+    if (score >= 3.5) {
+      return "добре";
+    } else {
+      if (score >= 2.5) {
+        return "задовільно";
+      } else {
+        return "незадовільно";
+      }
+    }
+  }
+}
+
 function buildReport(data, opts) {
   let report = "";
   const attentionStudents = [];
@@ -21,20 +37,7 @@ function buildReport(data, opts) {
   for (let i = 0; i < data.students.length; i++) {
     const student = data.students[i];
     const studentAverage = average(student.grades);
-    let studentLevel = "";
-    if (studentAverage >= 4.5) {
-      studentLevel = "відмінно";
-    } else {
-      if (studentAverage >= 3.5) {
-        studentLevel = "добре";
-      } else {
-        if (studentAverage >= 2.5) {
-          studentLevel = "задовільно";
-        } else {
-          studentLevel = "незадовільно";
-        }
-      }
-    }
+    const studentLevel = gradeName(studentAverage);
     let line = "";
     if (opts && opts.short) {
       line =
@@ -58,20 +61,7 @@ function buildReport(data, opts) {
   }
   report += "------------------------------\n";
   const groupAverage = average(studentAverages);
-  let groupLevel = "";
-  if (groupAverage >= 4.5) {
-    groupLevel = "відмінно";
-  } else {
-    if (groupAverage >= 3.5) {
-      groupLevel = "добре";
-    } else {
-      if (groupAverage >= 2.5) {
-        groupLevel = "задовільно";
-      } else {
-        groupLevel = "незадовільно";
-      }
-    }
-  }
+  const groupLevel = gradeName(groupAverage);
   report += "Середній бал групи: " + groupAverage.toFixed(1) + " (" + groupLevel + ")\n";
   if (attentionStudents.length > 0) {
     report += "Потребують уваги: " + attentionStudents.join(", ") + "\n";

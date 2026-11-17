@@ -40,8 +40,8 @@ function groupByReader(loans) {
 
 function canBorrow(reader, loans) {
   const byReader = groupByReader(loans);
-  const active = byReader[reader.id].filter((l) => !l.returnedAt);
-  return reader.active && active.length < MAX_ACTIVE;
+  const active = (byReader[reader.id] || []).filter((l) => !l.returnedAt);
+  return Boolean(reader.active) && active.length < MAX_ACTIVE;
 }
 
 function issueBook(loans, reader, bookId, issueDate) {

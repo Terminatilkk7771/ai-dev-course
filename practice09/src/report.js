@@ -39,6 +39,14 @@ function formatScore(score) {
   return score.toFixed(1) + " (" + gradeName(score) + ")";
 }
 
+function formatStudentLine(student, score, isShort) {
+  const baseLine = formatDisplayName(student.name, isShort) + " — " + formatScore(score);
+  if (score < 2.5) {
+    return baseLine + " [!]";
+  }
+  return baseLine;
+}
+
 function buildReport(data, opts) {
   let report = "";
   const attentionStudents = [];
@@ -50,12 +58,10 @@ function buildReport(data, opts) {
   for (let i = 0; i < data.students.length; i++) {
     const student = data.students[i];
     const studentAverage = average(student.grades);
-    let line = formatDisplayName(student.name, isShort) + " — " + formatScore(studentAverage);
     if (studentAverage < 2.5) {
-      line = line + " [!]";
       attentionStudents.push(student.name);
     }
-    report += line + "\n";
+    report += formatStudentLine(student, studentAverage, isShort) + "\n";
     studentAverages.push(studentAverage);
   }
   report += "------------------------------\n";

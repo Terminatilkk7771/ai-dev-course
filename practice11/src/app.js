@@ -1,8 +1,19 @@
+/**
+ * HTTP-застосунок Express із маршрутами для аудиторій та бронювань.
+ * @module app
+ */
+
 const express = require("express");
 const { createBookingService } = require("./bookings");
 const { findFreeSlots } = require("./slots");
 const defaultRooms = require("../data/rooms.json");
 
+/**
+ * Створює та налаштовує екземпляр застосунку Express для API бронювання аудиторій.
+ *
+ * @param {Array<object>} [rooms=defaultRooms] Початковий довідник аудиторій.
+ * @returns {object} Налаштований застосунок Express, готовий до тестування або запуску.
+ */
 function createApp(rooms = defaultRooms) {
   const app = express();
   const service = createBookingService(rooms);

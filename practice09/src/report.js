@@ -11,20 +11,15 @@ function average(values) {
   return sum / values.length;
 }
 
+const GRADE_LEVELS = [
+  { min: 4.5, label: "відмінно" },
+  { min: 3.5, label: "добре" },
+  { min: 2.5, label: "задовільно" },
+];
+
 function gradeName(score) {
-  if (score >= 4.5) {
-    return "відмінно";
-  } else {
-    if (score >= 3.5) {
-      return "добре";
-    } else {
-      if (score >= 2.5) {
-        return "задовільно";
-      } else {
-        return "незадовільно";
-      }
-    }
-  }
+  const matched = GRADE_LEVELS.find((level) => score >= level.min);
+  return matched ? matched.label : "незадовільно";
 }
 
 function formatDisplayName(name, isShort) {

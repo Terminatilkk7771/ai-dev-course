@@ -79,3 +79,29 @@ describe("Завдання 7: журнал нарахованих штрафів
     expect(getJournal()).toEqual([]);
   });
 });
+
+describe("Завдання 8: додаткові межові перевірки GET /api/readers/:id/fines", () => {
+  test("некоректний id (нечисловий, 0, від'ємний) повертає 400", async () => {
+    const app = createApp();
+    expect((await request(app).get("/api/readers/abc/fines").set(LIB)).status).toBe(400);
+    expect((await request(app).get("/api/readers/0/fines").set(LIB)).status).toBe(400);
+    expect((await request(app).get("/api/readers/-3/fines").set(LIB)).status).toBe(400);
+  });
+
+  test("запит без токена повертає 401", async () => {
+    const app = createApp();
+    expect((await request(app).get("/api/readers/1/fines")).status).toBe(401);
+  });
+
+  test("неповернена книга (навіть потенційно прострочена) не входить до суми штрафів, поки не повернена", async () => {
+    const app = createApp();
+    await request(app)
+      .post("/api/loans")
+      .set(LIB)
+      .send({ readerId: 1, bookId: 77, date: "2026-08-01" });
+
+    const res = await request(app).get("/api/readers/1/fines").set(LIB);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ readerId: 1, total: 0, loans: 0 });
+  });
+});
